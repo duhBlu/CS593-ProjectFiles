@@ -68,10 +68,12 @@ while running:
             mouse_pos = pygame.mouse.get_pos()
             col = mouse_pos[0] // SQUARE_SIZE
             row = mouse_pos[1] // SQUARE_SIZE
-            original_pos = (row, col)
-            dragged_piece = game_state[row][col]
-            game_state[row][col] = None
-            dragging = True
+            if game_state[row][col] is not None:  # Check if there's a piece on the clicked square
+                original_pos = (row, col)
+                dragged_piece = game_state[row][col]
+                game_state[row][col] = None
+                dragging = True
+
 
        # In the MOUSEBUTTONUP event handler, check the color of the piece on the square
         elif event.type == pygame.MOUSEBUTTONUP:
