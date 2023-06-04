@@ -161,8 +161,7 @@ white_heuristic = white_heuristic_dropdown.selected_option
 black_player = AIPlayer(black_heuristic)
 if white_heuristic_dropdown.selected_option != 'Player':
     white_player = AIPlayer(white_heuristic)
-else:
-    print("Not Implemented -- Player vs AI")
+
 # Set up the clock for managing the frame rate
 
 class Piece:
@@ -217,9 +216,20 @@ while running:
                 col = mouse_pos[0] // SQUARE_SIZE
                 row = mouse_pos[1] // SQUARE_SIZE
                 if 0 <= col < 8 and 0 <= row < 8:  # Check if the mouse is within the bounds of the board
-                    if game_state[row][col] is None or game_state[row][col] != dragged_piece:
-                        # If the square is empty or contains a piece of the other color, place the piece
-                        game_state[row][col] = dragged_piece
+                    if game_state[row][col] is None:  # If the square is empty
+                        # Check if the move is one step straight or diagonally forward
+                        if (original_pos[0] - row == 1) and (abs(original_pos[1] - col) <= 1):
+                            game_state[row][col] = dragged_piece
+                        else:
+                            # If the move is not valid, return the piece to its original position
+                            game_state[original_pos[0]][original_pos[1]] = dragged_piece
+                    elif game_state[row][col].color == 'black':  # If the square contains a piece of the other color
+                        # Check if the move is one step diagonally forward
+                        if (original_pos[0] - row == 1) and (abs(original_pos[1] - col) == 1):
+                            game_state[row][col] = dragged_piece
+                        else:
+                            # If the move is not valid, return the piece to its original position
+                            game_state[original_pos[0]][original_pos[1]] = dragged_piece
                     else:
                         # If the square contains a piece of the same color, return the piece to its original position
                         game_state[original_pos[0]][original_pos[1]] = dragged_piece
