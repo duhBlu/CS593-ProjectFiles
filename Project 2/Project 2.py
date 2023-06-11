@@ -52,6 +52,8 @@ class Heuristic:
         raise NotImplementedError
 
 # Heuristics subclasses
+
+# Class that skips evaluation for the players turn
 class PlayerHeuristic(Heuristic):
     def __init__(self, color):
         super().__init__(color)
@@ -60,7 +62,6 @@ class PlayerHeuristic(Heuristic):
 
     def search_algorithm(self):
         pass  # Do nothing
-
 
 class DefensiveHeuristic1(Heuristic):
     def __init__(self, color):
@@ -78,9 +79,26 @@ class DefensiveHeuristic1(Heuristic):
         return value
 
     def search_algorithm(self):
+        return "alpha-beta"
+    
+class OffensiveHeuristic1_MiniMax(Heuristic):
+    def __init__(self, color):
+        super().__init__(color)
+    def evaluate(self, state):
+        # Determine the opponent's color
+        opponent_color = 'black' if self.color == 'white' else 'white'
+        # Count the number of own pieces remaining
+        num_own_pieces = sum(1 for row in state for piece in row if piece is not None and piece.color == opponent_color)
+        
+        # Compute the value
+        value = 2 * num_own_pieces + random.random()
+        
+        return value
+
+    def search_algorithm(self):
         return "minimax"
     
-class OffensiveHeuristic1(Heuristic):
+class OffensiveHeuristic1_AlphaBeta(Heuristic):
     def __init__(self, color):
         super().__init__(color)
     def evaluate(self, state):
@@ -366,14 +384,8 @@ class Piece:
 # Initialize the game state
 black_player, white_player = setup_game()
 game_state = [[Piece(piece_black, 'black', black_player) if i < 2 else Piece(piece_white, 'white', white_player) if i >= 6 else None for j in range(8)] for i in range(8)]
-draw_board(game_state)
-
             
-
 game = Game(game_state, black_player, white_player)
-
-     
-    
 
 dragging = False
 dragged_piece = None
@@ -425,6 +437,7 @@ while running:
                     game_state[original_pos[0]][original_pos[1]] = dragged_piece
                 dragged_piece = None
                 dragging = False
+        manager.process_events(event)
                 
     # If it's the AI's turn, let it choose a move
     if not isinstance(game.current_player.heuristic_instance, PlayerHeuristic) and move is None:
@@ -438,9 +451,17 @@ while running:
         # Switch turns
         game.current_player = game.player2 if game.current_player == game.player1 else game.player1
         move = None
+      
+    # draw the game board, allows the piece to be updated each frame when picked up and moved  
+    for row in range(8):
+        for col in range(8):
+            color = LIGHT_SQUARE if (row + col) % 2 == 0 else DARK_SQUARE
+            pygame.draw.rect(screen, color, pygame.Rect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
-
-    
+            piece = game_state[row][col]
+            if piece is not None:
+                screen.blit(piece.image, ((col * SQUARE_SIZE) + 15, (row * SQUARE_SIZE) + 5))
+                
     manager.update(pygame.time.get_ticks())
     clock.tick(60)
     manager.draw_ui(screen)
@@ -451,8 +472,6 @@ while running:
 
     pygame.display.flip()
     pygame.display.update()
-
-
 
 # Quit Pygame
 pygame.quit()
