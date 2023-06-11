@@ -10,8 +10,8 @@ import queue
 class BreakthroughGame:
     def __init__(self):
         pygame.init()
-        self.width, self.height = 700, 560
-        self.sizeofcell = int(560/8)
+        self.width, self.height = 1000, 700
+        self.sizeofcell = int(700/8)
         self.screen = pygame.display.set_mode((self.width, self.height))
         self.screen.fill([255, 255, 255])
         # chessboard and workers
@@ -63,7 +63,8 @@ class BreakthroughGame:
 
             
     def run(self, matchup):
-
+        # Clear the AI queue
+        self.clear_ai_queue()
             # Reset the game state
         self.boardmatrix = [
             [1, 1, 1, 1, 1, 1, 1, 1],
@@ -90,22 +91,25 @@ class BreakthroughGame:
                 self.ai_move(*matchup[0])
                 self.total_time_1 += (time.process_time() - start)
                 self.total_step_1 += 1
-                print('total_step_1 = ', self.total_step_1,
+                print('WHITE: total_step_1 = ', self.total_step_1,
                     'total_nodes_1 = ', self.total_nodes_1,
                     'node_per_move_1 = ', self.total_nodes_1 / self.total_step_1,
                     'time_per_move_1 = ', self.total_time_1 / self.total_step_1,
                     'have_eaten = ', self.eat_piece)
+                
+                
             elif self.turn == 2:
                 start = time.process_time()
                 self.ai_move(*matchup[1])
                 self.total_time_2 += (time.process_time() - start)
                 self.total_step_2 += 1
-                print('total_step_2 = ', self.total_step_2,
+                print('BLACK: total_step_2 = ', self.total_step_2,
                     'total_nodes_2 = ', self.total_nodes_2,
                     'node_per_move_2 = ', self.total_nodes_2 / self.total_step_2,
                     'time_per_move_2 = ', self.total_time_2 / self.total_step_2,
                     'have_eaten: ', self.eat_piece)
                 
+        
             if self.isgoalstate():
                 self.status = 3
 
@@ -161,12 +165,71 @@ class BreakthroughGame:
             self.display()
             # update the screen
             pygame.display.flip()
-        print("Game Finished!! \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+        if self.isgoalstate():
+            self.show_end_game_popup()
+        
+    def show_end_game_popup(self):
+        # Create a font object.
+        font = pygame.font.Font(None, 36)
+
+        # Calculate statistics.
+        node_per_move_1 = self.total_nodes_1 / self.total_step_1
+        time_per_move_1 = self.total_time_1 / self.total_step_1
+        node_per_move_2 = self.total_nodes_2 / self.total_step_2
+        time_per_move_2 = self.total_time_2 / self.total_step_2
+
+        # Create the text.
+        winner_text = f"Winner: {'White' if self.turn == 2 else 'Black'}"
+        white_stats = [
+            "[White Statistics]",
+            f"total_step = {self.total_step_1}",
+            f"total_nodes = {self.total_nodes_1}",
+            f"node_per_move = {node_per_move_1:.2f}",
+            f"time_per_move = {time_per_move_1:.2f}",
+            f"have_eaten = {self.eat_piece}"
+        ]
+        black_stats = [
+            "[Black Statistics]",
+            f"total_step = {self.total_step_2}",
+            f"total_nodes = {self.total_nodes_2}",
+            f"node_per_move = {node_per_move_2:.2f}",
+            f"time_per_move = {time_per_move_2:.2f}",
+            f"have_eaten = {self.eat_piece}"
+        ]
+
+        # Create a solid surface.
+        s = pygame.Surface((self.width, self.height))  # the size of your rect
+        s.fill((0, 0, 0))  # this fills the entire surface
+
+        # Render the winner text and blit it to the surface.
+        winner_render = font.render(winner_text, True, (255, 255, 255))
+        s.blit(winner_render, (self.width // 2 - winner_render.get_width() // 2, 20))
+
+        # Render the statistics and blit them to the surface.
+        for i, (white_line, black_line) in enumerate(zip(white_stats, black_stats)):
+            white_render = font.render(white_line, True, (255, 255, 255))
+            black_render = font.render(black_line, True, (255, 255, 255))
+            s.blit(white_render, (20, 80 + i * 40))
+            s.blit(black_render, (self.width // 2 + 20, 80 + i * 40))
+
+        # Blit the surface to the screen and update the display.
+        self.screen.blit(s, (0, 0))
+        pygame.display.flip()
+
+        # Wait for the user to click.
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    waiting = False
+
+
+
 
     # load the graphics and rescale them
     def initgraphics(self):
         self.board = pygame.image.load_extended(os.path.join('Project 2\src', 'chessboard.jpg'))
-        self.board = pygame.transform.scale(self.board, (560, 560))
+        self.board = pygame.transform.scale(self.board, (700, 700))
         self.blackchess = pygame.image.load_extended(os.path.join('Project 2\src', 'blackchess.png'))
         self.blackchess = pygame.transform.scale(self.blackchess, (self.sizeofcell- 20, self.sizeofcell - 20))
         self.whitechess = pygame.image.load_extended(os.path.join('Project 2\src', 'whitechess.png'))
@@ -174,20 +237,21 @@ class BreakthroughGame:
         self.outline = pygame.image.load_extended(os.path.join('Project 2\src', 'square-outline.png'))
         self.outline = pygame.transform.scale(self.outline, (self.sizeofcell, self.sizeofcell))
         self.reset = pygame.image.load_extended(os.path.join('Project 2\src', 'reset.jpg'))
-        self.reset = pygame.transform.scale(self.reset, (80, 80))
+        self.reset = pygame.transform.scale(self.reset, (50, 50))
         self.winner = pygame.image.load_extended(os.path.join('Project 2\src', 'winner.png'))
         self.winner = pygame.transform.scale(self.winner, (250, 250))
         self.computer = pygame.image.load_extended(os.path.join('Project 2\src', 'computer.png'))
-        self.computer = pygame.transform.scale(self.computer, (80, 80))
+        self.computer = pygame.transform.scale(self.computer, (50, 50))
         self.auto = pygame.image.load_extended(os.path.join('Project 2\src', 'auto.png'))
-        self.auto = pygame.transform.scale(self.auto, (80, 80))
+        self.auto = pygame.transform.scale(self.auto, (50, 50))
 
     # display the graphics in the window
     def display(self):
+        self.screen.fill((255, 255, 255))
         self.screen.blit(self.board, (0, 0))
-        self.screen.blit(self.reset, (590, 50))
-        self.screen.blit(self.computer, (590, 200))
-        self.screen.blit(self.auto, (590, 340))
+        self.screen.blit(self.reset, (700, 50))
+        self.screen.blit(self.computer, (790, 50))
+        self.screen.blit(self.auto, (880, 50))
         for i in range(8):
             for j in range(8):
                 if self.boardmatrix[i][j] == 1:
@@ -237,6 +301,33 @@ class BreakthroughGame:
                                      (self.sizeofcell * y3, self.sizeofcell * x3))
         if self.status == 3:
             self.screen.blit(self.winner, (100, 100))
+            
+        font = pygame.font.Font(None, 24)
+
+        # Create the text.
+        white_stats = [
+            "White player statistics:",
+            f"total_step_1:    {self.total_step_1}",
+            f"total_nodes_1:   {self.total_nodes_1}",
+            f"node_per_move_1: {round((self.total_nodes_1 / self.total_step_1 if self.total_step_1 else 0), 2)}",
+            f"time_per_move_1: {self.total_time_1 / self.total_step_1 if self.total_step_1 else 0}",
+            f"have_eaten:      {self.eat_piece}"
+        ]
+        black_stats = [
+            "Black player statistics:",
+            f"total_step_2:    {self.total_step_2}",
+            f"total_nodes_2:   {self.total_nodes_2}",
+            f"node_per_move_2: {round((self.total_nodes_2 / self.total_step_2 if self.total_step_2 else 0), 2)}",
+            f"time_per_move_2: {self.total_time_2 / self.total_step_2 if self.total_step_2 else 0}",
+            f"have_eaten:      {self.eat_piece}"
+        ]
+
+        # Render the statistics and blit them to the screen.
+        for i, (white_line, black_line) in enumerate(zip(white_stats, black_stats)):
+            white_render = font.render(white_line, True, (0, 0, 0))
+            black_render = font.render(black_line, True, (0, 0, 0))
+            self.screen.blit(white_render, (725, 125 + i * 30))
+            self.screen.blit(black_render, (725, 325 + i * 30))
 
     def movechess(self):
         self.boardmatrix[self.new_x][self.new_y] = self.boardmatrix[self.ori_x][self.ori_y]
@@ -278,6 +369,15 @@ class BreakthroughGame:
                 and not (self.ori_y == self.new_y and self.boardmatrix[self.new_x][self.new_y] == 1)):
             return 1
         return 0
+    
+    # Updated ai move functions to implement a threaded queue to execute the moves
+    def clear_ai_queue(self):
+        while not self.ai_queue.empty():
+            try:
+                self.ai_queue.get(False)
+            except queue.Empty:
+                continue
+            self.ai_queue.task_done()
     
     def ai_loop(self):
         while True:
