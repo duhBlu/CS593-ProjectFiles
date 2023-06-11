@@ -162,11 +162,10 @@ class State:
             return self.offensive_function_long(turn)
         elif self.function == 6:
             return self.defensive_function_long(turn)
-
-
-
-
-
+        elif self.function == 7:
+            return self.offensive_function_2(turn)
+        elif self.function == 9:
+            return self.defensive_function_2(turn)
 
     # def myscore(self, turn):
     #     if turn == 1:
@@ -294,6 +293,21 @@ class State:
                #+  self.get_important_pos_baseline(turn)
 
     def defensive_function(self, turn):
+        """
+        2 * defensive_component + offensive_componet + tie_breaking
+        """
+        return 1 * self.myscore(turn) - 2 * self.enemyscore(turn)
+               #+ 2 * self.get_vertical_pairs(turn) + 4 * self.get_important_pos_baseline(turn)
+    
+    # better heuristic functions
+    def offensive_function_2(self, turn):
+        """
+        2 * offensive_component + defensive_componet + tie_breaking
+        """
+        return 2 * self.myscore(turn) - 1 * self.enemyscore(turn)
+               #+  self.get_important_pos_baseline(turn)
+
+    def defensive_function_2(self, turn):
         """
         2 * defensive_component + offensive_componet + tie_breaking
         """

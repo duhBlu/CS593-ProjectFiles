@@ -5,7 +5,8 @@ from minimax_agent import *
 from model import *
 from alpha_beta_agent import *
 import time
-
+import threading
+import queue
 class BreakthroughGame:
     def __init__(self):
         pygame.init()
@@ -55,107 +56,130 @@ class BreakthroughGame:
         # initialize pygame clock
         self.clock = pygame.time.Clock()
         self.initgraphics()
+        self.ai_queue = queue.Queue()
+        self.ai_thread = threading.Thread(target=self.ai_loop)
+        self.ai_thread.start()
+        
 
-    def run(self):
+            
+    def run(self, matchup):
+
+            # Reset the game state
+        self.boardmatrix = [
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [2, 2, 2, 2, 2, 2, 2, 2],
+            [2, 2, 2, 2, 2, 2, 2, 2]
+        ]
+        self.turn = 1
+        self.status = 5
+
+
         self.clock.tick(60)
 
         # clear the screen
         self.screen.fill([255, 255, 255])
-
-
-        if self.status == 5:
+        while not self.isgoalstate():
             # Black
             if self.turn == 1:
                 start = time.process_time()
-                self.ai_move(2, 2)
+                self.ai_move(*matchup[0])
                 self.total_time_1 += (time.process_time() - start)
                 self.total_step_1 += 1
                 print('total_step_1 = ', self.total_step_1,
-                      'total_nodes_1 = ', self.total_nodes_1,
-                      'node_per_move_1 = ', self.total_nodes_1 / self.total_step_1,
-                      'time_per_move_1 = ', self.total_time_1 / self.total_step_1,
-                      'have_eaten = ', self.eat_piece)
+                    'total_nodes_1 = ', self.total_nodes_1,
+                    'node_per_move_1 = ', self.total_nodes_1 / self.total_step_1,
+                    'time_per_move_1 = ', self.total_time_1 / self.total_step_1,
+                    'have_eaten = ', self.eat_piece)
             elif self.turn == 2:
                 start = time.process_time()
-                self.ai_move(2, 2)
+                self.ai_move(*matchup[1])
                 self.total_time_2 += (time.process_time() - start)
                 self.total_step_2 += 1
                 print('total_step_2 = ', self.total_step_2,
-                      'total_nodes_2 = ', self.total_nodes_2,
-                      'node_per_move_2 = ', self.total_nodes_2 / self.total_step_2,
-                      'time_per_move_2 = ', self.total_time_2 / self.total_step_2,
-                      'have_eaten: ', self.eat_piece)
+                    'total_nodes_2 = ', self.total_nodes_2,
+                    'node_per_move_2 = ', self.total_nodes_2 / self.total_step_2,
+                    'time_per_move_2 = ', self.total_time_2 / self.total_step_2,
+                    'have_eaten: ', self.eat_piece)
+                
+            if self.isgoalstate():
+                self.status = 3
 
-        # Events accepting
-        for event in pygame.event.get():
-            # Quit if close the windows
-            if event.type == pygame.QUIT:
-                exit()
-            # reset button pressed
-            elif event.type == pygame.MOUSEBUTTONDOWN and self.isreset(event.pos):
-                self.boardmatrix = [[1, 1, 1, 1, 1, 1, 1, 1],
-                            [1, 1, 1, 1, 1, 1, 1, 1],
-                            [0, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0],
-                            [2, 2, 2, 2, 2, 2, 2, 2],
-                            [2, 2, 2, 2, 2, 2, 2, 2]]
-                self.turn = 1
-                self.status = 0
-            # computer button pressed
-            elif event.type == pygame.MOUSEBUTTONDOWN and self.iscomputer(event.pos):
-                self.ai_move_alphabeta(1)
-                # self.ai_move_minimax()
+            # Events accepting
+            for event in pygame.event.get():
+                # Quit if close the windows
+                if event.type == pygame.QUIT:
+                    exit()
+                # reset button pressed
+                elif event.type == pygame.MOUSEBUTTONDOWN and self.isreset(event.pos):
+                    self.boardmatrix = [[1, 1, 1, 1, 1, 1, 1, 1],
+                                        [1, 1, 1, 1, 1, 1, 1, 1],
+                                        [0, 0, 0, 0, 0, 0, 0, 0],
+                                        [0, 0, 0, 0, 0, 0, 0, 0],
+                                        [0, 0, 0, 0, 0, 0, 0, 0],
+                                        [0, 0, 0, 0, 0, 0, 0, 0],
+                                        [2, 2, 2, 2, 2, 2, 2, 2],
+                                        [2, 2, 2, 2, 2, 2, 2, 2]]
+                    self.turn = 1
+                    self.status = 0
+                # computer button pressed
+                elif event.type == pygame.MOUSEBUTTONDOWN and self.iscomputer(event.pos):
+                    self.ai_move_alphabeta(1)
+                    # self.ai_move_minimax()
 
-            elif event.type == pygame.MOUSEBUTTONDOWN and self.isauto(event.pos):
-                self.status = 5
+                elif event.type == pygame.MOUSEBUTTONDOWN and self.isauto(event.pos):
+                    self.status = 5
 
-            # ====================================================================================
-            # select chess
-            elif event.type == pygame.MOUSEBUTTONDOWN and self.status == 0:
-                x, y = event.pos
-                coor_y = math.floor(x / self.sizeofcell)
-                coor_x = math.floor(y / self.sizeofcell)
-                if self.boardmatrix[coor_x][coor_y] == self.turn:
-                    self.status = 1
-                    self.ori_y = math.floor(x / self.sizeofcell)
-                    self.ori_x = math.floor(y / self.sizeofcell)
-            # check whether the selected chess can move, otherwise select other chess
-            elif event.type == pygame.MOUSEBUTTONDOWN and self.status == 1:
-                x, y = event.pos
-                self.new_y = math.floor(x / self.sizeofcell)
-                self.new_x = math.floor(y / self.sizeofcell)
-                if self.isabletomove():
-                    self.movechess()
-                    if (self.new_x == 7 and self.boardmatrix[self.new_x][self.new_y] == 1) \
-                        or (self.new_x == 0 and self.boardmatrix[self.new_x][self.new_y] == 2):
-                        self.status = 3
-                elif self.boardmatrix[self.new_x][self.new_y] == self.boardmatrix[self.ori_x][self.ori_y]:
-                    self.ori_x = self.new_x
-                    self.ori_y = self.new_y
-                    # display the board and chess
-        self.display()
-        # update the screen
-        pygame.display.flip()
+                # ====================================================================================
+                # select chess
+                elif event.type == pygame.MOUSEBUTTONDOWN and self.status == 0:
+                    x, y = event.pos
+                    coor_y = math.floor(x / self.sizeofcell)
+                    coor_x = math.floor(y / self.sizeofcell)
+                    if self.boardmatrix[coor_x][coor_y] == self.turn:
+                        self.status = 1
+                        self.ori_y = math.floor(x / self.sizeofcell)
+                        self.ori_x = math.floor(y / self.sizeofcell)
+                # check whether the selected chess can move, otherwise select other chess
+                elif event.type == pygame.MOUSEBUTTONDOWN and self.status == 1:
+                    x, y = event.pos
+                    self.new_y = math.floor(x / self.sizeofcell)
+                    self.new_x = math.floor(y / self.sizeofcell)
+                    if self.isabletomove():
+                        self.movechess()
+                        if (self.new_x == 7 and self.boardmatrix[self.new_x][self.new_y] == 1) \
+                            or (self.new_x == 0 and self.boardmatrix[self.new_x][self.new_y] == 2):
+                            self.status = 3
+                    elif self.boardmatrix[self.new_x][self.new_y] == self.boardmatrix[self.ori_x][self.ori_y]:
+                        self.ori_x = self.new_x
+                        self.ori_y = self.new_y
+                        # display the board and chess
+            self.display()
+            # update the screen
+            pygame.display.flip()
+        print("Game Finished!! \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
 
     # load the graphics and rescale them
     def initgraphics(self):
-        self.board = pygame.image.load_extended(os.path.join('src', 'chessboard.jpg'))
+        self.board = pygame.image.load_extended(os.path.join('Project 2\src', 'chessboard.jpg'))
         self.board = pygame.transform.scale(self.board, (560, 560))
-        self.blackchess = pygame.image.load_extended(os.path.join('src', 'blackchess.png'))
+        self.blackchess = pygame.image.load_extended(os.path.join('Project 2\src', 'blackchess.png'))
         self.blackchess = pygame.transform.scale(self.blackchess, (self.sizeofcell- 20, self.sizeofcell - 20))
-        self.whitechess = pygame.image.load_extended(os.path.join('src', 'whitechess.png'))
+        self.whitechess = pygame.image.load_extended(os.path.join('Project 2\src', 'whitechess.png'))
         self.whitechess = pygame.transform.scale(self.whitechess, (self.sizeofcell - 20, self.sizeofcell - 20))
-        self.outline = pygame.image.load_extended(os.path.join('src', 'square-outline.png'))
+        self.outline = pygame.image.load_extended(os.path.join('Project 2\src', 'square-outline.png'))
         self.outline = pygame.transform.scale(self.outline, (self.sizeofcell, self.sizeofcell))
-        self.reset = pygame.image.load_extended(os.path.join('src', 'reset.jpg'))
+        self.reset = pygame.image.load_extended(os.path.join('Project 2\src', 'reset.jpg'))
         self.reset = pygame.transform.scale(self.reset, (80, 80))
-        self.winner = pygame.image.load_extended(os.path.join('src', 'winner.png'))
+        self.winner = pygame.image.load_extended(os.path.join('Project 2\src', 'winner.png'))
         self.winner = pygame.transform.scale(self.winner, (250, 250))
-        self.computer = pygame.image.load_extended(os.path.join('src', 'computer.png'))
+        self.computer = pygame.image.load_extended(os.path.join('Project 2\src', 'computer.png'))
         self.computer = pygame.transform.scale(self.computer, (80, 80))
-        self.auto = pygame.image.load_extended(os.path.join('src', 'auto.png'))
+        self.auto = pygame.image.load_extended(os.path.join('Project 2\src', 'auto.png'))
         self.auto = pygame.transform.scale(self.auto, (80, 80))
 
     # display the graphics in the window
@@ -254,12 +278,29 @@ class BreakthroughGame:
                 and not (self.ori_y == self.new_y and self.boardmatrix[self.new_x][self.new_y] == 1)):
             return 1
         return 0
+    
+    def ai_loop(self):
+        while True:
+            task = self.ai_queue.get()
+            if task is None:
+                break  # Exit the loop if None is added to the queue
 
+            searchtype, evaluation = task
+            if searchtype == 1:
+                self.ai_move_minimax(evaluation)
+            elif searchtype == 2:
+                self.ai_move_alphabeta(evaluation)
+
+            self.ai_queue.task_done()
+            
     def ai_move(self, searchtype, evaluation):
-        if searchtype == 1:
-            return self.ai_move_minimax(evaluation)
-        elif searchtype == 2:
-            return self.ai_move_alphabeta(evaluation)
+        self.ai_queue.put((searchtype, evaluation))
+        
+    # def ai_move(self, searchtype, evaluation):
+    #     if searchtype == 1:
+    #         return self.ai_move_minimax(evaluation)
+    #     elif searchtype == 2:
+    #         return self.ai_move_alphabeta(evaluation)
 
     def ai_move_minimax(self, function_type):
         board, nodes, piece = MinimaxAgent(self.boardmatrix, self.turn, 3, function_type).minimax_decision()
@@ -273,7 +314,7 @@ class BreakthroughGame:
         self.eat_piece = 16 - piece
         if self.isgoalstate():
             self.status = 3
-            #print(self.boardmatrix)
+            #print(self.boardmatrix)x
 
     def ai_move_alphabeta(self, function_type):
         board, nodes, piece = AlphaBetaAgent(self.boardmatrix, self.turn, 5, function_type).alpha_beta_decision()
@@ -323,9 +364,23 @@ class BreakthroughGame:
         return False
 
 def main():
-    game = BreakthroughGame()
-    while 1:
-        game.run()
+    matchups = [
+        ((1, 1), (2, 1)),  # Minimax (Offensive Heuristic 1) vs Alpha-beta (Offensive Heuristic 1)
+        ((2, 2), (2, 1)),  # Alpha-beta (Offensive Heuristic 2) vs Alpha-beta (Defensive Heuristic 1)
+        ((2, 1), (2, 2)),  # Alpha-beta (Defensive Heuristic 2) vs Alpha-beta (Offensive Heuristic 1)
+        ((2, 2), (2, 1)),  # Alpha-beta (Offensive Heuristic 2) vs Alpha-beta (Offensive Heuristic 1)
+        ((2, 1), (2, 1)),  # Alpha-beta (Defensive Heuristic 2) vs Alpha-beta (Defensive Heuristic 1)
+        ((2, 2), (2, 2))   # Alpha-beta (Offensive Heuristic 2) vs Alpha-beta (Defensive Heuristic 2)
+    ]
+    i = 1
+    for matchup in matchups:
+        print("Starting matchup " + str(i))
+        game = BreakthroughGame()
+        game.run(matchup)
+        i += 1
+    game.ai_queue.put(None)
+    game.ai_thread.join()
+    pygame.quit()
 
 
 if __name__ == '__main__':
