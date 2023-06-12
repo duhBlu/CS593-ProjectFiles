@@ -71,12 +71,13 @@ class AlphaBetaAgent:
                 final_action = action
                 v = minresult
         #print(v)
-        if self.turn == 1:
-            self.piece_num = initialstate.transfer(final_action).white_num
-        elif self.turn == 2:
-            self.piece_num = initialstate.transfer(final_action).black_num
-        #print(final_action.getString())
-        return initialstate.transfer(final_action), self.nodes, self.piece_num
+        if final_action is not None:
+            if self.turn == 1:
+                self.piece_num = initialstate.transfer(final_action).white_num
+            elif self.turn == 2:
+                self.piece_num = initialstate.transfer(final_action).black_num
+            #print(final_action.getString())
+            return initialstate.transfer(final_action), self.nodes, self.piece_num
 
     # order actions to make more pruning
     def orderaction(self, action, state):

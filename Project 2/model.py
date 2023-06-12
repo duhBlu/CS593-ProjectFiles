@@ -1,4 +1,4 @@
-
+import random
 initial_boardmatrix = [[1, 1, 1, 1, 1, 1, 1, 1],
                [1, 1, 1, 1, 1, 1, 1, 1],
                [0, 0, 0, 0, 0, 0, 0, 0],
@@ -88,7 +88,6 @@ class State:
     def transfer(self, action):
         black_pos = list(self.black_positions)
         white_pos = list(self.white_positions)
-
         # black move
         if action.turn == 1:
             if action.coordinate in self.black_positions:
@@ -164,7 +163,7 @@ class State:
             return self.defensive_function_long(turn)
         elif self.function == 7:
             return self.offensive_function_2(turn)
-        elif self.function == 9:
+        elif self.function == 8:
             return self.defensive_function_2(turn)
 
     # def myscore(self, turn):
@@ -285,34 +284,66 @@ class State:
                    #+ max(pos[0] for pos in self.black_positions) \
 
 
-    def offensive_function(self, turn):
-        """
-        2 * offensive_component + defensive_componet + tie_breaking
-        """
-        return 2 * self.myscore(turn) - 1 * self.enemyscore(turn)
-               #+  self.get_important_pos_baseline(turn)
+
 
     def defensive_function(self, turn):
         """
-        2 * defensive_component + offensive_componet + tie_breaking
+        Defensive Heuristic 1: The more pieces you have remaining, the higher your
+        value is. The value will be computed according to the
+        formula 2*(number_of_own_pieces_remaining) + random().
         """
-        return 1 * self.myscore(turn) - 2 * self.enemyscore(turn)
-               #+ 2 * self.get_vertical_pairs(turn) + 4 * self.get_important_pos_baseline(turn)
+        if turn == 1:
+            number_of_own_pieces_remaining = len(self.black_positions)
+        elif turn == 2:
+            number_of_own_pieces_remaining = len(self.white_positions)
+        return 2 * number_of_own_pieces_remaining + random.random()
+
+    def offensive_function(self, turn):
+        """
+        Offensive Heuristic 1: The more pieces your opponent has remaining, the
+        lower your value is. The value will be computed according to the formula 2*(30 -
+        number_of_opponent_pieces_remaining) + random().
+        """
+        if turn == 1:
+            number_of_opponent_pieces_remaining = len(self.white_positions)
+        elif turn == 2:
+            number_of_opponent_pieces_remaining = len(self.black_positions)
+        return 2 * (30 - number_of_opponent_pieces_remaining) + random.random()
+
     
-    # better heuristic functions
     def offensive_function_2(self, turn):
         """
-        2 * offensive_component + defensive_componet + tie_breaking
+        Offensive Heuristic 2: This heuristic is designed to beat Defensive Heuristic 1.
+        It prioritizes reducing the number of opponent's pieces while maximizing the number of own pieces.
+        It also considers the position of the pieces, prioritizing pieces that are closer to the opponent's baseline.
         """
-        return 2 * self.myscore(turn) - 1 * self.enemyscore(turn)
-               #+  self.get_important_pos_baseline(turn)
+        if turn == 1:
+            number_of_own_pieces = len(self.black_positions)
+            number_of_opponent_pieces_remaining = len(self.white_positions)
+            position_score = sum(pos[0] for pos in self.black_positions)
+        elif turn == 2:
+            number_of_own_pieces = len(self.white_positions)
+            number_of_opponent_pieces_remaining = len(self.black_positions)
+            position_score = sum(7 - pos[0] for pos in self.white_positions)
+
+        return 2 * number_of_own_pieces - number_of_opponent_pieces_remaining + 0.5 * position_score + random.random()
 
     def defensive_function_2(self, turn):
         """
-        2 * defensive_component + offensive_componet + tie_breaking
+        Defensive Heuristic 2: This heuristic is designed to beat Offensive Heuristic 1.
+        It prioritizes maintaining the number of own pieces while trying to reduce the number of opponent's pieces.
+        It also considers the position of the pieces, prioritizing pieces that are farther from the opponent's baseline.
         """
-        return 1 * self.myscore(turn) - 2 * self.enemyscore(turn)
-               #+ 2 * self.get_vertical_pairs(turn) + 4 * self.get_important_pos_baseline(turn)
+        if turn == 1:
+            number_of_own_pieces = len(self.black_positions)
+            number_of_opponent_pieces_remaining = len(self.white_positions)
+            position_score = sum(7 - pos[0] for pos in self.black_positions)
+        elif turn == 2:
+            number_of_own_pieces = len(self.white_positions)
+            number_of_opponent_pieces_remaining = len(self.black_positions)
+            position_score = sum(pos[0] for pos in self.white_positions)
+
+        return 2 * number_of_own_pieces - number_of_opponent_pieces_remaining + 0.5 * position_score + random.random()
 
 
     def myscore_3_workers(self, turn):
