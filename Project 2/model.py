@@ -287,11 +287,6 @@ class State:
 
 
     def defensive_function(self, turn):
-        """
-        Defensive Heuristic 1: The more pieces you have remaining, the higher your
-        value is. The value will be computed according to the
-        formula 2*(number_of_own_pieces_remaining) + random().
-        """
         if turn == 1:
             number_of_own_pieces_remaining = len(self.black_positions)
         elif turn == 2:
@@ -299,11 +294,6 @@ class State:
         return 2 * number_of_own_pieces_remaining + random.random()
 
     def offensive_function(self, turn):
-        """
-        Offensive Heuristic 1: The more pieces your opponent has remaining, the
-        lower your value is. The value will be computed according to the formula 2*(30 -
-        number_of_opponent_pieces_remaining) + random().
-        """
         if turn == 1:
             number_of_opponent_pieces_remaining = len(self.white_positions)
         elif turn == 2:
@@ -329,11 +319,6 @@ class State:
         return 2 * number_of_own_pieces - number_of_opponent_pieces_remaining + 0.5 * position_score + random.random()
 
     def defensive_function_2(self, turn):
-        """
-        Defensive Heuristic 2: This heuristic is designed to beat Offensive Heuristic 1.
-        It prioritizes maintaining the number of own pieces while trying to reduce the number of opponent's pieces.
-        It also considers the position of the pieces, prioritizing pieces that are farther from the opponent's baseline.
-        """
         if turn == 1:
             number_of_own_pieces = len(self.black_positions)
             number_of_opponent_pieces_remaining = len(self.white_positions)

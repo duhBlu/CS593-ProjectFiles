@@ -6,6 +6,7 @@ from model import *
 from alpha_beta_agent import *
 import time
 import threading
+from pprint import pprint
 class BreakthroughGame:
     def __init__(self):
         pygame.init()
@@ -54,7 +55,9 @@ class BreakthroughGame:
         self.prev_nodes_2 = 0
         self.total_step_1 = 0
         self.total_step_2 = 0
-        self.eat_piece = 0
+        self.eat_piece_1 = 0
+        self.eat_piece_2 = 0
+        
         # Caption
         pygame.display.set_caption("Breakthrough!")
 
@@ -73,7 +76,7 @@ class BreakthroughGame:
         
         self.current_white_matchup = self.get_matchup_name(matchup[0])
         self.current_black_matchup = self.get_matchup_name(matchup[1])
-            # Reset the game state
+        # Reset the game state
         self.boardmatrix = [
             [1, 1, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 1, 1, 1, 1, 1],
@@ -86,31 +89,29 @@ class BreakthroughGame:
         ]
         self.turn = 1
         self.status = 5
-
-
         self.clock.tick(60)
-
         # clear the screen
         self.screen.fill([255, 255, 255])
         while not self.isgoalstate():
             # Black
             if self.turn == 1:
-                start = time.process_time()
-                nodes_searched = self.ai_move(*matchup[0])
-                self.prev_nodes_1 = nodes_searched  # store the nodes searched in the current turn
-                self.total_nodes_1 += nodes_searched
-                self.prev_time_1  = time.process_time() - start
-                self.total_time_1 += self.prev_time_1
-                self.total_step_1 += 1                
+                    start = time.process_time()
+                    nodes_searched = self.ai_move(*matchup[0])
+                    self.prev_nodes_1 = nodes_searched  # store the nodes searched in the current turn
+                    self.total_nodes_1 += nodes_searched
+                    self.prev_time_1  = time.process_time() - start
+                    self.total_time_1 += self.prev_time_1
+                    self.total_step_1 += 1                
             else:
-                start = time.process_time()
-                nodes_searched = self.ai_move(*matchup[1])
-                self.prev_nodes_2 = nodes_searched  # store the nodes searched in the current turn
-                self.total_nodes_2 += nodes_searched
-                self.prev_time_2  = time.process_time() - start
-                self.total_time_2 += self.prev_time_2
-                self.total_step_2 += 1
-       
+                    start = time.process_time()
+                    nodes_searched = self.ai_move(*matchup[1])
+                    self.prev_nodes_2 = nodes_searched  # store the nodes searched in the current turn
+                    self.total_nodes_2 += nodes_searched
+                    self.prev_time_2  = time.process_time() - start
+                    self.total_time_2 += self.prev_time_2
+                    self.total_step_2 += 1
+            
+            
         
             if self.isgoalstate():
                 self.status = 3
@@ -167,9 +168,19 @@ class BreakthroughGame:
             self.display()
             # update the screen
             pygame.display.flip()
+            
+            if self.turn == 1:
+                game_dir = f"{self.current_white_matchup}_vs_{self.current_black_matchup}"
+                os.makedirs(game_dir, exist_ok=True)
+                screenshot_filename = f"{game_dir}/turn_{self.total_step_2}.png"
+                pygame.image.save(self.screen, screenshot_filename)
+            
         if self.isgoalstate():
-            pygame.event.wait()
-            self.show_end_game_popup()
+            game_dir = f"{self.current_white_matchup}_vs_{self.current_black_matchup}"
+            os.makedirs(game_dir, exist_ok=True)
+            screenshot_filename = f"{game_dir}/turn_{self.total_step_2}.png"
+            pygame.image.save(self.screen, screenshot_filename)
+            return self.show_end_game_popup()
             
     def get_matchup_name(self, matchup):
         # Return a string describing the given matchup.
@@ -202,22 +213,22 @@ class BreakthroughGame:
         # Create the text.
         winner_text = f"Winner: {self.current_black_matchup if self.turn == 2 else self.current_white_matchup}"
         white_stats = [
-            f"[{self.current_white_matchup} Statistics]",
-            f"Total Steps = {self.total_step_1}",
-            f"Total Nodes = {self.total_nodes_1}",
-            f"Total Turn Duration = {self.total_time_1:.4f}",
-            f"Average Nodes Searched per Turn = {node_per_move_1:.4f}",
-            f"Average Time per Turn = {time_per_move_1:.4f}",
-            f"Opponents Defeated = {self.eat_piece}"
-        ]
-        black_stats = [
-            f"[{self.current_black_matchup} Statistics]",
+            f"White: [{self.current_white_matchup} Statistics]",
             f"Total Steps = {self.total_step_2}",
-            f"Total nodes = {self.total_nodes_2}",
+            f"Total Nodes = {self.total_nodes_2}",
             f"Total Turn Duration = {self.total_time_2:.4f}",
             f"Average Nodes Searched per Turn = {node_per_move_2:.4f}",
             f"Average Time per Turn = {time_per_move_2:.4f}",
-            f"Opponent Pieces Defeated = {self.eat_piece}"
+            f"Opponents Defeated = {self.eat_piece_2}"
+        ]
+        black_stats = [
+            f"Black: [{self.current_black_matchup} Statistics]",
+            f"Total Steps = {self.total_step_1}",
+            f"Total nodes = {self.total_nodes_1}",
+            f"Total Turn Duration = {self.total_time_1:.4f}",
+            f"Average Nodes Searched per Turn = {node_per_move_1:.4f}",
+            f"Average Time per Turn = {time_per_move_1:.4f}",
+            f"Opponent Pieces Defeated = {self.eat_piece_1}"
         ]
         
         # Create a solid surface.
@@ -339,30 +350,36 @@ class BreakthroughGame:
             
         font = pygame.font.Font(None, 24)
         
+        
         # Create the text for current player's turn.
-        current_player_text = "Turn: Black" if self.turn == 1 else "Turn: White"
+        current_player_text = "Black" if self.turn == 1 else "White"
 
+        if current_player_text == "Black":
+            current_player_render = font.render(current_player_text, True, (100, 100, 100))
+            self.screen.blit(current_player_render, (770, 110))
+        else:
+            current_player_render = font.render(current_player_text, True, (255, 255, 255))
+            self.screen.blit(current_player_render, (830, 110))
         # Render the text and blit it to the screen.
-        current_player_render = font.render(current_player_text, True, (255, 255, 255))
-        self.screen.blit(current_player_render, (725, 110)) 
+        self.screen.blit(font.render("Turn:", True, (255,255,255)), (725, 110))
         
         white_stats = [
             f"White: {self.current_white_matchup}",
             f"Total Steps: {self.total_step_2}",
-            f"Nodes searched last Turn: {self.prev_nodes_1}",
+            f"Nodes searched last Turn: {self.prev_nodes_2}",
             f"Average Nodes per Turn: {round((self.total_nodes_2 / self.total_step_2 if self.total_step_2 else 0), 4)}",
             f"Time for previous Turn: {self.prev_time_2:.4f}s",
             f"Average time per Turn: {round((self.total_time_2 / self.total_step_2 if self.total_step_2 else 0),4)}s",
-            f"Opponents Defeated:{self.eat_piece}"
+            f"Opponents Defeated: {self.eat_piece_2}"
         ]
         black_stats = [
             f"Black: {self.current_black_matchup}",
             f"Total Steps: {self.total_step_1}",
-            f"Nodes searched last Turn: {self.prev_nodes_2}",
+            f"Nodes searched last Turn: {self.prev_nodes_1}",
             f"Average Nodes per Turn: {round((self.total_nodes_1 / self.total_step_1 if self.total_step_1 else 0), 4)}",
             f"Time for previous Turn: {self.prev_time_1:.4f}s",
             f"Average time per Turn: {round((self.total_time_1 / self.total_step_1 if self.total_step_1 else 0), 4)}s",
-            f"Opponents Defeated: {self.eat_piece}"
+            f"Opponents Defeated: {self.eat_piece_1}"
         ]
 
 
@@ -425,14 +442,17 @@ class BreakthroughGame:
 
     def ai_move_minimax(self, function_type):
         board, nodes, piece = MinimaxAgent(self.boardmatrix, self.turn, 3, function_type).minimax_decision()
+        if board is None:
+            return 0 
         self.boardmatrix = board.getMatrix()
         if self.turn == 1:
             self.total_nodes_1 += nodes
+            self.eat_piece_1 = 16 - piece
             self.turn = 2
         elif self.turn == 2:
             self.total_nodes_2 += nodes
+            self.eat_piece_2 = 16 - piece
             self.turn = 1
-        self.eat_piece = 16 - piece
         if self.isgoalstate():
             self.status = 3
             #print(self.boardmatrix)x
@@ -440,14 +460,18 @@ class BreakthroughGame:
 
     def ai_move_alphabeta(self, function_type):
         board, nodes, piece = AlphaBetaAgent(self.boardmatrix, self.turn, 5, function_type).alpha_beta_decision()
+        if board is None:
+            return 0 
         self.boardmatrix = board.getMatrix()
         if self.turn == 1:
             self.total_nodes_1 += nodes
+            self.eat_piece_1 = 16 - piece
             self.turn = 2
         elif self.turn == 2:
             self.total_nodes_2 += nodes
+            self.eat_piece_2 = 16 - piece
             self.turn = 1
-        self.eat_piece = 16 - piece
+        
         if self.isgoalstate():
             self.status = 3
         return nodes
@@ -495,23 +519,26 @@ class BreakthroughGame:
 def main():
     matchups = [
         ((1, 1), (2, 1)),  # Minimax (Offensive Heuristic 1) vs Alpha-beta (Offensive Heuristic 1)
-        ((2, 7), (2, 2)),  # Alpha-beta (Offensive Heuristic 2) vs Alpha-beta (Defensive Heuristic 1)
-        ((2, 8), (2, 1)),  # Alpha-beta (Defensive Heuristic 2) vs Alpha-beta (Offensive Heuristic 1)
-        ((2, 7), (2, 1)),  # Alpha-beta (Offensive Heuristic 2) vs Alpha-beta (Offensive Heuristic 1)
-        ((2, 8), (2, 2)),  # Alpha-beta (Defensive Heuristic 2) vs Alpha-beta (Defensive Heuristic 1)
-        ((2, 7), (2, 8))   # Alpha-beta (Offensive Heuristic 2) vs Alpha-beta (Defensive Heuristic 2)
+        #((2, 7), (2, 2)),  # Alpha-beta (Offensive Heuristic 2) vs Alpha-beta (Defensive Heuristic 1)
+        #((2, 8), (2, 1)),  # Alpha-beta (Defensive Heuristic 2) vs Alpha-beta (Offensive Heuristic 1)
+        #((2, 7), (2, 1)),  # Alpha-beta (Offensive Heuristic 2) vs Alpha-beta (Offensive Heuristic 1)
+        #((2, 8), (2, 2)),  # Alpha-beta (Defensive Heuristic 2) vs Alpha-beta (Defensive Heuristic 1)
+        #((2, 7), (2, 8))   # Alpha-beta (Offensive Heuristic 2) vs Alpha-beta (Defensive Heuristic 2)
     ]
     i = 1
+    game_stats = []
     for matchup in matchups:
         print("Starting matchup " + str(i))
         game = BreakthroughGame()
-        game.run(matchup)
+        stats = game.run(matchup)
         i += 1
+        game_stats.append(stats)
     #game.ai_queue.put(None)
     #game.ai_thread.join()
     pygame.quit()
 
-    
+    for game_statistics in game_stats:
+        pprint(game_statistics)
 if __name__ == '__main__':
     main()
 
